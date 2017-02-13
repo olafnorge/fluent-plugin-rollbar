@@ -1,4 +1,5 @@
 require 'eventmachine'
+require 'em-http-request'
 require 'fluent/output'
 require 'json'
 
@@ -25,9 +26,6 @@ module Fluent
         # Open sockets or files here.
         def start
             super
-            @rollbar = ''
-        rescue Exception => e
-            $log.warn "rollbar: #{e}"
         end
 
         # This method is called when shutting down.
@@ -60,23 +58,28 @@ module Fluent
         ## Optionally, you can use chunk.msgpack_each to deserialize objects.
         def write(chunk)
             chunk.msgpack_each do |(_tag, _time, record)|
-                if record.key? 'log'
+                record = record['log'] if record.key? 'log'
+
+                EventMachine.run do
+                    record['access_token'] = @access_token
                     headers = { 'X-Rollbar-Access-Token' => @access_token }
-                    req = EventMachine::HttpRequest.new(@endpoint).post(body: record['log'].to_json, head: headers)
+                    req = EventMachine::HttpRequest.new(@endpoint).post(body: record.to_json, head: headers)
 
                     req.callback do
                         if req.response_header.status != 200
                             $log.warn "rollbar: Got unexpected status code from Rollbar.io api: #{req.response_header.status}"
                             $log.warn "rollbar: Response: #{req.response}"
                         end
+
+                        EventMachine.stop
                     end
 
                     req.errback do
                         $log.warn "rollbar: Call to API failed, status code: #{req.response_header.status}"
                         $log.warn "rollbar: Error's response: #{req.response}"
+
+                        EventMachine.stop
                     end
-                else
-                    raise KeyError, 'record in wrong format'
                 end
             end
         rescue Exception => e

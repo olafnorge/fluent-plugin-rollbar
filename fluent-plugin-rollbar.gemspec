@@ -18,4 +18,5 @@ Gem::Specification.new do |gem|
     gem.add_dependency 'fluentd'
     gem.add_dependency 'eventmachine'
     gem.add_dependency 'json'
+    gem.add_dependency 'em-http-request'
 end
