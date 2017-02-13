@@ -3,10 +3,10 @@ require 'fluent/output'
 require 'json'
 
 module Fluent
-    class RollbarPhpExceptionOutput < BufferedOutput
+    class RollbarOutput < BufferedOutput
         # First, register the plugin. NAME is the name of this plugin
         # and identifies the plugin in the configuration file.
-        Fluent::Plugin.register_output('rollbar_php_exception', self)
+        Fluent::Plugin.register_output('rollbar', self)
 
         # config_param defines a parameter. You can refer a parameter via @path instance variable
         # Without :default, a parameter is required.
